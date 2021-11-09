@@ -22,6 +22,15 @@ from dm_control.suite.wrappers import pixels as pixel_wrapper
 
 import gin
 import numpy as np
+from gym import core, spaces
+import glob
+import os
+import local_dm_control_suite as suite
+from dm_env import specs
+import numpy as np
+import skimage.io
+import cv2
+from dmc2gym import natural_imgsource
 
 from tf_agents.environments import dm_control_wrapper
 from tf_agents.environments import wrappers
@@ -42,6 +51,9 @@ def load(domain_name,
          action_repeat=1,
          frame_stack=4,
          episode_length=1000,
+         resource_files=None,
+         img_source=None,
+         total_frames=1000,
          actions_in_obs=True,
          rewards_in_obs=False,
          pixels_obs=True,
@@ -59,12 +71,23 @@ def load(domain_name,
 
   env = dm_control_wrapper.DmControlWrapper(env, render_kwargs)
 
+  files = glob.glob(os.path.expanduser(resource_files))
+  assert len(files), "Pattern {} does not match any files".format(
+      resource_files
+  )
+  if img_source == "images":
+      _bg_source = natural_imgsource.RandomImageSource((84, 84), files, grayscale=True, total_frames=total_frames)
+  elif img_source == "video":
+      _bg_source = natural_imgsource.RandomVideoSource((84, 84), files, grayscale=True, total_frames=total_frames)
+  else:
+      raise Exception("img_source %s not defined." % img_source)
+
   if pixels_obs and grayscale:
     env = GrayscaleWrapper(env)
   if action_repeat > 1:
     env = action_repeat_wrapper(env, action_repeat)
   if pixels_obs:
-    env = FrameStack(env, frame_stack, actions_in_obs, rewards_in_obs)
+    env = FrameStack(env, frame_stack, _bg_source, actions_in_obs, rewards_in_obs)
   else:
     env = FlattenState(env)
 
@@ -150,13 +173,14 @@ class GrayscaleWrapper(wrappers.PyEnvironmentBaseWrapper):
 class FrameStack(wrappers.PyEnvironmentBaseWrapper):
   """Stack frames."""
 
-  def __init__(self, env, stack_size, actions_in_obs, rewards_in_obs):
+  def __init__(self, env, stack_size, _bg_source, actions_in_obs, rewards_in_obs):
     """Initializes a wrapper."""
     super(FrameStack, self).__init__(env)
     self.stack_size = stack_size
     self._frames = collections.deque(maxlen=stack_size)
     self.actions_in_obs = actions_in_obs
     self.rewards_in_obs = rewards_in_obs
+    self._bg_source = _bg_source
 
     # Update the observation spec in the environment.
     observation_spec = env.observation_spec()
@@ -193,6 +217,14 @@ class FrameStack(wrappers.PyEnvironmentBaseWrapper):
     """Steps the environment."""
     time_step = self._env.step(action)
     observations = time_step.observation
+
+    obs = observations['pixels']
+    
+    mask = np.logical_and( (obs[:, :, 0] < 130),  (obs[:, :, 1] < 130), (obs[:, :, 2] < 130))
+    bg = self._bg_source.get_image()
+    obs[mask] = bg[mask]
+
+    observations['pixels'] = obs
 
     # frame stacking
     self._frames.append(observations['pixels'])

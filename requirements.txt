@@ -1,0 +1,12 @@
+tensorflow-gpu==2.3.0
+tf_agents==0.6.0
+tensorflow_probability==0.11.0
+dm_control 
+gym
+imageio
+matplotlib
+scikit-image
+scipy
+gin
+pstar
+qj

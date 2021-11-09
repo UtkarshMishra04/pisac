@@ -24,11 +24,13 @@ import numpy as np
 
 from pisac import ceb_task
 from pisac import dm_control_env
+import dmc2gym
 from pisac import encoders
 from pisac import metric_utils as pisac_metric_utils
 from pisac import sac_agent
 from pisac import schedule_utils
 from pisac import utils
+import utils as env_utils
 
 from qj_global import qj
 
@@ -59,6 +61,7 @@ def env_load_fn(domain_name,
                 render_configs,
                 frame_stack,
                 action_repeat,
+                seed,
                 actions_in_obs=False,
                 rewards_in_obs=False):
   """Load environment."""
@@ -66,10 +69,32 @@ def env_load_fn(domain_name,
                             task_name=task_name,
                             action_repeat=action_repeat,
                             frame_stack=frame_stack,
+                            resource_files='./distractors/driving/*.mp4',
+                            img_source='video',
+                            total_frames=2,
                             actions_in_obs=actions_in_obs,
                             rewards_in_obs=rewards_in_obs,
                             pixels_obs=True,
                             render_kwargs=render_configs)
+
+
+  # env = dmc2gym.make(
+  #       domain_name=domain_name,
+  #       task_name=task_name,
+  #       resource_files='./distractors/driving/*.mp4',
+  #       img_source='video',
+  #       total_frames=1000,
+  #       seed=seed,
+  #       visualize_reward=False,
+  #       from_pixels=True,
+  #       height=84,
+  #       width=84,
+  #       frame_skip=action_repeat,
+  #   )
+
+  # env.seed(seed)
+  # env = env_utils.FrameStack(env, k=frame_stack)
+
   return env
 
 
@@ -188,7 +213,10 @@ def train_eval(
   logging.info('log interval (env steps) = %d', log_env_interval)
   logging.info('log interval (gradient steps) = %d', log_interval)
 
-  root_dir = os.path.expanduser(root_dir)
+  root_dir = os.path.expanduser(os.path.join(root_dir, 'pisac-'+domain_name+'-'+task_name+'-s'+str(random_seed)))
+
+  if not os.path.exists(root_dir):
+    os.makedirs(root_dir)
 
   summary_writer = tf.compat.v2.summary.create_file_writer(
       root_dir, flush_millis=summaries_flush_secs * 1000)
@@ -213,10 +241,10 @@ def train_eval(
 
   tf_env = tf_py_environment.TFPyEnvironment(
       env_load_fn(domain_name, task_name, render_configs, frame_stack,
-                  action_repeat))
+                  action_repeat, random_seed))
   eval_tf_env = tf_py_environment.TFPyEnvironment(
       env_load_fn(domain_name, task_name, render_configs, frame_stack,
-                  action_repeat))
+                  action_repeat, random_seed))
 
   # Define global step
   g_step = common.create_variable('g_step')
