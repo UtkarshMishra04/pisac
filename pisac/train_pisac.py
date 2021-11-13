@@ -31,7 +31,7 @@ from pisac import sac_agent
 from pisac import schedule_utils
 from pisac import utils
 import utils as env_utils
-
+from tqdm import tqdm
 from qj_global import qj
 
 import tensorflow.compat.v2 as tf
@@ -71,7 +71,7 @@ def env_load_fn(domain_name,
                             frame_stack=frame_stack,
                             resource_files='./distractors/driving/*.mp4',
                             img_source='video',
-                            total_frames=2,
+                            total_frames=1000,
                             actions_in_obs=actions_in_obs,
                             rewards_in_obs=rewards_in_obs,
                             pixels_obs=True,
@@ -742,7 +742,7 @@ def train_eval(
   with tf.summary.record_if(lambda: tf.math.equal(g_step%summary_interval, 0)):
     if learn_ceb and g_step.numpy() < initial_feature_step:
       qj(initial_feature_step, 'Pretraining CEB...', tic=1)
-      for _ in range(g_step.numpy(), initial_feature_step):
+      for _ in tqdm(range(g_step.numpy(), initial_feature_step)):
         with tf.name_scope('LearningRates'):
           tf.summary.scalar(name='CEB learning rate',
                             data=feature_lr_fn(), step=g_step)

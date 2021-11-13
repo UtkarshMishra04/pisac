@@ -22,7 +22,7 @@ train_pisac.train_eval.use_critic_grad=True
 
 
 # Params for collect
-train_pisac.train_eval.num_env_steps=1000000
+train_pisac.train_eval.num_env_steps=510000
 train_pisac.train_eval.collect_every=1
 train_pisac.train_eval.initial_collect_steps=1000
 train_pisac.train_eval.collect_steps_per_iteration=1

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --account=rrg-mtaylor3
+#SBATCH --account=def-mtaylor3
 #SBATCH -J reac_h0
 #SBATCH -o ./slurm/%j.out
 #SBATCH -e ./slurm/%j.err
@@ -7,7 +7,7 @@
 #SBATCH --gres=gpu:1        # request GPU "generic resource"
 #SBATCH --cpus-per-task=6  # maximum CPU cores per GPU request: 6 on Cedar, 16 on Graham.
 #SBATCH --mem=84G        # memory per node
-#SBATCH --time=0-24:00      # time (DD-HH:MM)
+#SBATCH --time=0-48:00      # time (DD-HH:MM)
 #SBATCH --mail-user=utkarsh75477@gmail.com
 #SBATCH --mail-type=FAIL
 
@@ -16,7 +16,7 @@ source /home/umishra/simrl/bin/activate
 
 export MUJOCO_GL=osmesa
 
-python -m pisac.run --root_dir=/tmp/case_0 \
+python -m pisac.run --root_dir=./tmp/case_0 \
 --gin_file=pisac/config/pisac.gin \
 --gin_bindings=train_pisac.train_eval.domain_name=\'reacher\' \
 --gin_bindings=train_pisac.train_eval.task_name=\'easy\' \
